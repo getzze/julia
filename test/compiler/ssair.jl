@@ -314,3 +314,20 @@ end
 # Issue #41975 - SSA conversion drops type check
 f_if_typecheck() = (if nothing; end; unsafe_load(Ptr{Int}(0)))
 @test_throws TypeError f_if_typecheck()
+
+let # https://github.com/JuliaLang/julia/issues/42258
+    # XXX this test case is not so robust against the future changes within `Core.Compiler`
+    ci, = only(code_typed(Core.Compiler.setindex!, (Core.Compiler.UseRef,Core.Compiler.NewSSAValue); optimize=true))
+    idx = filter(1:length(ci.code)) do i
+        stmt = ci.code[i]
+        if Meta.isexpr(stmt, :call)
+            t = Core.Compiler.argextype(stmt.args[1], ci, Any[])
+            ft = Core.Compiler.widenconst(t)
+            return ft === typeof(BoundsError) || ft === typeof(throw)
+        end
+        return false
+    end
+    @test all(ci.ssaflags[idx]) do flag
+        flag & Core.Compiler.IR_FLAG_THROW_BLOCK ≠ 0
+    end
+end

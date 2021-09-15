@@ -666,6 +666,7 @@ function type_annotate!(sv::InferenceState, run_optimizer::Bool)
                 deleteat!(ssavaluetypes, i)
                 deleteat!(src.codelocs, i)
                 deleteat!(sv.stmt_info, i)
+                deleteat!(src.ssaflags, i)
                 nexpr -= 1
                 changemap[oldidx] = -1
                 continue
